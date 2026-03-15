@@ -30,12 +30,12 @@ def lcs_recursive(seq1, seq2):
     
     WARNING: This will be exponentially slow on large inputs!
     """
-    # TODO: Implement naive recursive solution
-    # Hint: Base case - if either sequence is empty, LCS length is 0
-    # Hint: If last characters match, LCS length = 1 + LCS of remaining sequences
-    # Hint: If last characters don't match, try removing last char from each sequence, take max
-    
-    pass  # Delete this and write your code
+    if not seq1 or not seq2:
+        return 0
+    if seq1[-1] == seq2[-1]:
+        return 1 + lcs_recursive(seq1[:-1], seq2[:-1])
+    else:
+        return max(lcs_recursive(seq1[:-1], seq2), lcs_recursive(seq1, seq2[:-1]))
 
 
 # ============================================================================
@@ -59,13 +59,21 @@ def lcs_memoization(seq1, seq2):
     Example:
         lcs_memoization("AGGTAB", "GXTXAYB") returns 4 (LCS is "GTAB")
     """
-    # TODO: Implement memoization solution
-    # Hint: Create a cache dictionary to store results
-    # Hint: Use tuple of (i, j) as key where i, j are positions in sequences
-    # Hint: Check cache before computing, store result before returning
-    # Hint: You may want to create a helper function that takes indices
+    memo = {}
     
-    pass  # Delete this and write your code
+    def helper(i, j):
+        if i == len(seq1) or j == len(seq2):
+            return 0
+        key = (i, j)
+        if key in memo:
+            return memo[key]
+        if seq1[i] == seq2[j]:
+            memo[key] = 1 + helper(i + 1, j + 1)
+        else:
+            memo[key] = max(helper(i + 1, j), helper(i, j + 1))
+        return memo[key]
+    
+    return helper(0, 0)
 
 
 # ============================================================================
@@ -89,14 +97,17 @@ def lcs_tabulation(seq1, seq2):
     Example:
         lcs_tabulation("AGGTAB", "GXTXAYB") returns 4 (LCS is "GTAB")
     """
-    # TODO: Implement tabulation solution
-    # Hint: Create a 2D table where dp[i][j] = LCS length of seq1[0..i] and seq2[0..j]
-    # Hint: Initialize first row and column to 0 (empty sequence cases)
-    # Hint: Fill table row by row
-    # Hint: If characters match: dp[i][j] = dp[i-1][j-1] + 1
-    # Hint: If characters don't match: dp[i][j] = max(dp[i-1][j], dp[i][j-1])
+    m, n = len(seq1), len(seq2)
+    dp = [[0] * (n + 1) for _ in range(m + 1)]
     
-    pass  # Delete this and write your code
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            if seq1[i - 1] == seq2[j - 1]:
+                dp[i][j] = dp[i - 1][j - 1] + 1
+            else:
+                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])
+    
+    return dp[m][n]
 
 
 # ============================================================================
@@ -104,45 +115,40 @@ def lcs_tabulation(seq1, seq2):
 # ============================================================================
 
 def load_sequence(filename):
-    """Load DNA sequence from JSON file."""
     with open(f"sequences/{filename}", "r") as f:
         return json.load(f)
 
 
 def test_small_cases():
-    """Test all implementations on small known cases."""
     print("="*70)
     print("TESTING ON SMALL CASES")
     print("="*70 + "\n")
     
     test_cases = [
-        ("AGGTAB", "GXTXAYB", 4),  # LCS: GTAB
-        ("ABCDGH", "AEDFHR", 3),   # LCS: ADH
-        ("ABC", "AC", 2),           # LCS: AC
-        ("", "ABC", 0),             # LCS: empty
+        ("AGGTAB", "GXTXAYB", 4),
+        ("ABCDGH", "AEDFHR", 3),
+        ("ABC", "AC", 2),
+        ("", "ABC", 0),
     ]
     
     for seq1, seq2, expected in test_cases:
         print(f"Test: '{seq1}' vs '{seq2}'")
         print(f"  Expected LCS length: {expected}")
-        
-        # Test recursive
+
         try:
             result = lcs_recursive(seq1, seq2)
             status = "✓ PASS" if result == expected else "✗ FAIL"
             print(f"  Recursive: {result} {status}")
         except Exception as e:
             print(f"  Recursive: ERROR - {str(e)}")
-        
-        # Test memoization
+
         try:
             result = lcs_memoization(seq1, seq2)
             status = "✓ PASS" if result == expected else "✗ FAIL"
             print(f"  Memoization: {result} {status}")
         except Exception as e:
             print(f"  Memoization: ERROR - {str(e)}")
-        
-        # Test tabulation
+
         try:
             result = lcs_tabulation(seq1, seq2)
             status = "✓ PASS" if result == expected else "✗ FAIL"
@@ -160,7 +166,7 @@ def time_recursive():
     print("="*70 + "\n")
     print("WARNING: Recursive solution will become very slow!\n")
     
-    sizes = [10, 20, 50]  # Keep small to avoid infinite wait
+    sizes = [10, 20, 50]
     
     for size in sizes:
         data = load_sequence(f"dna_{size}.json")
@@ -198,8 +204,7 @@ def compare_all_approaches():
         seq2 = data["sequence2"]
         
         times = {"size": size}
-        
-        # Recursive (skip if too large)
+
         if size <= 20:
             try:
                 start = time.perf_counter()
@@ -209,24 +214,21 @@ def compare_all_approaches():
                 times["recursive"] = None
         else:
             times["recursive"] = None
-        
-        # Memoization
+
         try:
             start = time.perf_counter()
             lcs_memoization(seq1, seq2)
             times["memoization"] = time.perf_counter() - start
         except:
             times["memoization"] = None
-        
-        # Tabulation
+
         try:
             start = time.perf_counter()
             lcs_tabulation(seq1, seq2)
             times["tabulation"] = time.perf_counter() - start
         except:
             times["tabulation"] = None
-        
-        # Print results
+
         rec_str = f"{times['recursive']:.4f}s" if times['recursive'] else "Too slow"
         mem_str = f"{times['memoization']:.4f}s" if times['memoization'] else "ERROR"
         tab_str = f"{times['tabulation']:.4f}s" if times['tabulation'] else "ERROR"
@@ -235,13 +237,6 @@ def compare_all_approaches():
 
 
 if __name__ == "__main__":
-    print("DYNAMIC PROGRAMMING ASSIGNMENT - STARTER CODE")
-    print("Implement the LCS functions above, then run tests.\n")
-    
-    # Uncomment these as you complete each part:
-    
-    # test_small_cases()
-    # time_recursive()
-    # compare_all_approaches()
-    
-    print("\n⚠ Uncomment the test functions in the main block to run tests!")
+    test_small_cases()
+    time_recursive()
+    compare_all_approaches()
